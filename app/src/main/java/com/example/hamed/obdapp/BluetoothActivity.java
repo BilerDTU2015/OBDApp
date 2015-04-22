@@ -6,6 +6,8 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+
+import java.util.ArrayList;
 import java.util.Set;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -62,10 +64,11 @@ public class BluetoothActivity extends Activity implements OnClickListener {
             findBtn = (Button)findViewById(R.id.search);
             findBtn.setOnClickListener(this);
 
-            myListView = (ListView)findViewById(R.id.listView1);
+            myListView = (ListView)findViewById(R.id.pairedListView);
+            ArrayList<String> values = new ArrayList();
+            values.add("Paired devices");
 
-            // create the arrayAdapter that contains the BTDevices, and set it to the ListView
-            BTArrayAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1);
+            BTArrayAdapter = createAdapter(values);
             myListView.setAdapter(BTArrayAdapter);
         }
     }
@@ -73,15 +76,16 @@ public class BluetoothActivity extends Activity implements OnClickListener {
     @Override
     public void onClick(View v)
     {
-        Toast.makeText(getApplicationContext(), "You clicked a button",
-                Toast.LENGTH_LONG).show();
+
         switch (v.getId()) {
             case R.id.turnOn:
                 on();
                break;
             case R.id.turnOff:
+                off();
                 break;
             case R.id.paired:
+                listPairedDevices();
                 break;
             case R.id.search:
                 break;
@@ -116,6 +120,37 @@ public class BluetoothActivity extends Activity implements OnClickListener {
                 text.setText("Status: Disabled");
             }
         }
+    }
+
+    public void listPairedDevices(){
+
+        Toast.makeText(getApplicationContext(), "Paired Devices",
+                Toast.LENGTH_LONG).show();
+
+        	if (!myBluetoothAdapter.isEnabled()) {
+    	    Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+    	    startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
+    	}
+
+//    	// see if there is all ready paired devices
+    	Set<BluetoothDevice> pairedDevices = myBluetoothAdapter.getBondedDevices();
+    	ArrayList<String> deviceInfos = new ArrayList();
+    	// If there are paired devices
+    	if (pairedDevices.size() > 0) {
+    	    // Loop through paired devices
+    	    for (BluetoothDevice device : pairedDevices) {
+    	        // Add the name and address to an array adapter to show in a ListView
+    	    	deviceInfos.add(device.getName() + "\n" + device.getAddress());
+    	      //  mArrayAdapter.add(device.getName() + "\n" + device.getAddress());
+    	    }
+    	    myListView.setAdapter(createAdapter(deviceInfos) );
+
+    	}
+    }
+
+    // Create adapter for use in listPaired devices
+    private ArrayAdapter<String> createAdapter(ArrayList<String> data){
+        return new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, data.toArray(new String[data.size()]));
     }
 
     public void list(View view){
@@ -158,7 +193,7 @@ public class BluetoothActivity extends Activity implements OnClickListener {
         }
     }
 
-    public void off(View view){
+    public void off(){
         myBluetoothAdapter.disable();
         text.setText("Status: Disconnected");
 
