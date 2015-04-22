@@ -15,6 +15,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name="com.example.hamed.obdapp.BluetoothActivity"
+            android:label="Bluetooth terminal"
+            android:parentActivityName="com.example.hamed.obdapp.MainActivity" >
+        </activity>
     </application>
 
 </manifest>
