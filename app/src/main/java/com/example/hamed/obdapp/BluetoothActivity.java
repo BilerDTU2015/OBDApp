@@ -17,7 +17,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-public class BluetoothActivity extends Activity {
+public class BluetoothActivity extends Activity implements OnClickListener {
 
     private static final int REQUEST_ENABLE_BT = 1;
     private Button onBtn;
@@ -47,46 +47,20 @@ public class BluetoothActivity extends Activity {
             Toast.makeText(getApplicationContext(),"Your device does not support Bluetooth",
                     Toast.LENGTH_LONG).show();
         } else {
-            text = (TextView) findViewById(R.id.text);
-            onBtn = (Button)findViewById(R.id.turnOn);
-            onBtn.setOnClickListener(new OnClickListener() {
 
-                @Override
-                public void onClick(View v) {
-                    // TODO Auto-generated method stub
-                    on(v);
-                }
-            });
+            text = (TextView) findViewById(R.id.text);
+
+            onBtn = (Button)findViewById(R.id.turnOn);
+            onBtn.setOnClickListener(this);
 
             offBtn = (Button)findViewById(R.id.turnOff);
-            offBtn.setOnClickListener(new OnClickListener() {
-
-                @Override
-                public void onClick(View v) {
-                    // TODO Auto-generated method stub
-                    off(v);
-                }
-            });
+            offBtn.setOnClickListener(this);
 
             listBtn = (Button)findViewById(R.id.paired);
-            listBtn.setOnClickListener(new OnClickListener() {
-
-                @Override
-                public void onClick(View v) {
-                    // TODO Auto-generated method stub
-                    list(v);
-                }
-            });
+            listBtn.setOnClickListener(this);
 
             findBtn = (Button)findViewById(R.id.search);
-            findBtn.setOnClickListener(new OnClickListener() {
-
-                @Override
-                public void onClick(View v) {
-                    // TODO Auto-generated method stub
-                    find(v);
-                }
-            });
+            findBtn.setOnClickListener(this);
 
             myListView = (ListView)findViewById(R.id.listView1);
 
@@ -96,8 +70,30 @@ public class BluetoothActivity extends Activity {
         }
     }
 
-    public void on(View view){
+    @Override
+    public void onClick(View v)
+    {
+        Toast.makeText(getApplicationContext(), "You clicked a button",
+                Toast.LENGTH_LONG).show();
+        switch (v.getId()) {
+            case R.id.turnOn:
+                on();
+               break;
+            case R.id.turnOff:
+                break;
+            case R.id.paired:
+                break;
+            case R.id.search:
+                break;
+        }
+    }
+
+    public void on(){
         if (!myBluetoothAdapter.isEnabled()) {
+
+            Toast.makeText(getApplicationContext(), "Mah method",
+                    Toast.LENGTH_LONG).show();
+
             Intent turnOnIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(turnOnIntent, REQUEST_ENABLE_BT);
 
