@@ -54,7 +54,6 @@
 
         <ListView
             android:id="@+id/pairedListView"
-            android:textColor="#FF0000"
             android:layout_width="fill_parent"
             android:layout_height="fill_parent"
             android:layout_marginBottom="10dp"
