@@ -7,4 +7,5 @@
     <string name="off">Turn Off</string>
     <string name="List">List paired Devices</string>
     <string name="Find">Search new Devices / Cancel</string>
+    <string name="sendCommand">Send AT command to device</string>
 </resources>

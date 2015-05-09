@@ -14,12 +14,21 @@ import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Set;
 import java.util.UUID;
 
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.ParcelUuid;
+import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
@@ -39,15 +48,20 @@ public class BluetoothActivity extends Activity implements OnClickListener {
     private Button offBtn;
     private Button listBtn;
     private Button findBtn;
+    private Button sendCMD;
 
     private TextView text;
     private BluetoothAdapter myBluetoothAdapter;
     private Set<BluetoothDevice> pairedDevices;
     private ListView myListView;
     private ArrayAdapter<String> BTArrayAdapter;
+    private BluetoothSocket mBtSocket;
 
     private String mDeviceIdentifier;
     private String mDeviceName;
+
+    private InputStream is;
+    private OutputStream os;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -81,6 +95,9 @@ public class BluetoothActivity extends Activity implements OnClickListener {
             findBtn = (Button)findViewById(R.id.search);
             findBtn.setOnClickListener(this);
 
+            sendCMD = (Button)findViewById(R.id.sendCommand);
+            sendCMD.setOnClickListener(this);
+
             myListView = (ListView)findViewById(R.id.pairedListView);
             ArrayList<String> values = new ArrayList();
             //values.add("Paired devices");
@@ -107,7 +124,9 @@ public class BluetoothActivity extends Activity implements OnClickListener {
 
                     createConnectDialog();
 
-                }
+                    }
+
+
             });
 
             BTArrayAdapter = createAdapter(values);
@@ -120,7 +139,7 @@ public class BluetoothActivity extends Activity implements OnClickListener {
         // split string into device name and device identifier
         String[] splitted = mDeviceIdentifier.split("\\s+");
         int len = splitted.length;
-        String uuidString = splitted[len - 1];
+        final String uuidString = splitted[len - 1];
         String name = "";
         // Add every part of splitted except the last one which is uuid
         for (String str : splitted){
@@ -145,6 +164,17 @@ public class BluetoothActivity extends Activity implements OnClickListener {
         builder.setPositiveButton("Yes mein Führer", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int id) {
                 // User clicked OK button
+                try {
+                    mBtSocket = connectToOBD(uuidString);
+                    Toast.makeText(getApplicationContext(),
+                            "Connected to bt socket : " + mBtSocket.isConnected() , Toast.LENGTH_LONG)
+                            .show();
+                } catch (Exception e) {
+                    Toast.makeText(getApplicationContext(),
+                            "fail" , Toast.LENGTH_LONG)
+                            .show();
+                    e.printStackTrace();
+                }
             }
         });
         builder.setNegativeButton("NEIN NEIN NEIN!", new DialogInterface.OnClickListener() {
@@ -172,6 +202,23 @@ public class BluetoothActivity extends Activity implements OnClickListener {
                 break;
             case R.id.search:
                 discoverDevices();
+                break;
+            case R.id.sendCommand:
+                String command01 = "atsp6";
+                String command02 = "ate0";
+                String command03 = "ath1";
+                String command04 = "atcra 412";
+                String command05 = "atS0";
+
+                try {
+                    sendCommand(command01);
+                    String res = readResult();
+                    String res2 = formatRawData(res).toString();
+                    Log.d("COMMAND", res);
+                    Log.d("COMMAND", res2);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
                 break;
         }
     }
@@ -265,13 +312,61 @@ public class BluetoothActivity extends Activity implements OnClickListener {
     /*
         Class that takes the string with device identifier and tries to create a bluetooth socket to the device and returns the socket.
      */
-    public BluetoothSocket connectToOBD(String deviceAddress) throws Exception{
+    public BluetoothSocket connectToOBD(String deviceAddress) {
+
+        String uuidFromString = "00001101-0000-1000-8000-00805f9b34fb";
+
         BluetoothDevice device = myBluetoothAdapter.getRemoteDevice(deviceAddress);
-        UUID uuid = UUID.fromString(deviceAddress);
-        BluetoothSocket socket = device.createInsecureRfcommSocketToServiceRecord(uuid);
-        socket.connect();
-        return socket;
+        BluetoothSocket socket;
+        try {
+                socket = device.createInsecureRfcommSocketToServiceRecord(UUID.fromString(uuidFromString));
+                socket.connect();
+                is = socket.getInputStream();
+                os = socket.getOutputStream();
+
+                 return socket;
+            } catch (IOException e1) {
+            e1.printStackTrace();
+        }
+        return null;
     }
+
+    public void sendCommand(String command) throws IOException {
+        os.write((command + "\r").getBytes() );
+        os.flush();
+
+    }
+
+    public String readResult() throws IOException {
+        byte[] buffer = new byte[1024];
+        try {
+            is.read(buffer);
+            return buffer.toString();
+        } catch (IOException e){
+            e.printStackTrace();
+        }
+        return "";
+    }
+
+    // Requires inputstream is has been successfully initialized
+    public ArrayList<Integer> formatRawData(String data) {
+
+        // Example of raw data, String str = "[B@42fbb420"
+
+        // read string each two chars
+        ArrayList<Integer> buffer = new ArrayList<>();
+        buffer.clear();
+        int begin = 0;
+        int end = 2;
+        while (end <= data.length()) {
+            buffer.add(Integer.decode("0x" + data.substring(begin, end)));
+            begin = end;
+            end += 2;
+        }
+        return buffer;
+    }
+
+
 
     final BroadcastReceiver bReceiver = new BroadcastReceiver() {
         public void onReceive(Context context, Intent intent) {
